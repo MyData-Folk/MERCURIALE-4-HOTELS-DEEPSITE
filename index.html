@@ -521,33 +521,57 @@
             });
             function findProductByCode(code) {
                 const allData = [...dataFolkestone, ...dataVendome, ...dataWashington, ...dataLeHavre];
-                // Handle multiple codes separated by spaces
                 const codes = code.includes(' ') ? code.split(' ') : [code];
-                const products = allData.filter(p => codes.includes(String(p['Code Produit'] ?? '').trim()));
-                if (products.length === 0) {
-                    priceComparisonResults.classList.add('hidden');
+                
+                if (codes.length > 1) {
+                    // Traitement des multiples codes
+                    priceComparisonCards.innerHTML = '';
+                    let hasResults = false;
+                    
+                    codes.forEach(currentCode => {
+                        const products = allData.filter(p => String(p['Code Produit'] ?? '').trim() === currentCode);
+                        if (products.length > 0) {
+                            hasResults = true;
+                            // Créer un groupe pour ce code produit
+                            priceComparisonCards.innerHTML += `
+                                <div class="col-span-full mb-4">
+                                    <h3 class="font-semibold text-lg text-indigo-700 mb-2">${products[0]['Libellé produit'] || 'Produit inconnu'}</h3>
+                                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            `;
+                            
+                            // Afficher les prix pour chaque source
+                            ['Folkestone', 'Vendôme', 'Washington', 'Le Havre'].forEach(source => {
+                                const product = products.find(p => p._source === source);
+                                const price = product ? parsePriceAsFloat(product.Prix) : 0;
+                                const priceFormatted = product ? formatPriceFromFloat(price) : '-';
+                                
+                                priceComparisonCards.innerHTML += `
+                                    <div class="price-card">
+                                        <div class="price-card-header">${source}</div>
+                                        <div class="text-xs text-gray-500 mb-1">${currentCode}</div>
+                                        <div class="price-card-value">${priceFormatted}</div>
+                                    </div>
+                                `;
+                            });
+                            
+                            priceComparisonCards.innerHTML += `</div></div>`;
+                        }
+                    });
+                    
+                    if (hasResults) {
+                        priceComparisonResults.classList.remove('hidden');
+                        addToComparisonListBtn.disabled = false;
+                        addToComparisonListBtn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i>Ajouter les résultats à la liste';
+                    } else {
+                        priceComparisonResults.classList.add('hidden');
+                    }
                     return;
                 }
-
-                // For multiple codes, show all found products
-                if (codes.length > 1) {
-                    priceComparisonCards.innerHTML = '';
-                    products.forEach(product => {
-                        const price = parsePriceAsFloat(product.Prix);
-                        const priceFormatted = formatPriceFromFloat(price);
-                        
-                        priceComparisonCards.innerHTML += `
-                            <div class="price-card">
-                                <div class="price-card-header">${product._source}</div>
-                                <div class="text-xs text-gray-500 mb-1">${product['Code Produit']}</div>
-                                <div class="text-sm mb-1">${product['Libellé produit']}</div>
-                                <div class="price-card-value">${priceFormatted}</div>
-                            </div>
-                        `;
-                    });
-                    priceComparisonResults.classList.remove('hidden');
-                    addToComparisonListBtn.disabled = false;
-                    addToComparisonListBtn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i>Ajouter les résultats à la liste';
+                
+                // Traitement d'un seul code
+                const products = allData.filter(p => String(p['Code Produit'] ?? '').trim() === code);
+                if (products.length === 0) {
+                    priceComparisonResults.classList.add('hidden');
                     return;
                 }
 // Group by product name (first product's name)
@@ -834,15 +858,22 @@
                     return;
                 }
 
-                // Recherche multi-codes avec ESPACE comme séparateur pour les deux modules
+                // Recherche multi-codes avec ESPACE comme séparateur
                 if (field === 'Code Produit' && query.includes(' ')) {
                     const codes = query.split(' ').filter(code => code.trim().length > 0);
-                    lastSearchResults = currentData.filter(item => {
-                        const itemCode = String(item['Code Produit'] ?? '').trim();
-                        return codes.some(code => code === itemCode);
+                    lastSearchResults = [];
+                    
+                    // Pour chaque code, trouver tous les produits correspondants dans chaque source
+                    codes.forEach(code => {
+                        currentData.forEach(item => {
+                            const itemCode = String(item['Code Produit'] ?? '').trim();
+                            if (itemCode === code) {
+                                lastSearchResults.push(item);
+                            }
+                        });
                     });
                 } else {
-                    const lowerCaseQuery = query.toLowerCase();
+const lowerCaseQuery = query.toLowerCase();
                     lastSearchResults = currentData.filter(item => {
                         if (field === "all") return Object.values(item).some(val => String(val).toLowerCase().includes(lowerCaseQuery));
                         return (item[field]?.toString().toLowerCase() || '').includes(lowerCaseQuery);
@@ -1243,17 +1274,15 @@ return `
             function updateProductCount() {
                 productCountElement.textContent = `${currentData.length} produits`;
             }
-
             function highlightText(text, query) {
                 const content = text ?? '';
                 if (!query || !content) return content;
                 
                 // Ne pas surligner si c'est une recherche multi-codes
-                if (searchField.value === 'Code Produit' && isMultiCodeSearch(query)) {
+                if (searchField.value === 'Code Produit' && query.includes(' ')) {
                     return content;
                 }
-                
-                return String(content).replace(
+return String(content).replace(
                     new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'), 
                     '<span class="search-highlight">$1</span>'
                 );
