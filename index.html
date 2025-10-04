@@ -219,7 +219,7 @@
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                 <i class="fas fa-barcode text-gray-400"></i>
                             </div>
-                            <input type="text" id="productCodeInput" placeholder="Entrez un code produit (ex: 12345)..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                            <input type="text" id="productCodeInput" placeholder="Entrez un code produit (ex: 12345) ou plusieurs codes séparés par un espace..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
 
@@ -349,7 +349,7 @@
         </div>
     </div>
 
-    <!-- NOUVEAU: Modale Paramètres -->
+    <!-- Modale Paramètres -->
     <div id="settingsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
         <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center pb-3">
@@ -368,7 +368,7 @@
         </div>
     </div>
 
-    <!-- NOUVEAU: Modale Contact -->
+    <!-- Modale Contact -->
     <div id="contactModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
         <div class="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div class="flex justify-between items-center pb-3">
@@ -502,11 +502,65 @@
                 updateProductCount();
                 renderOrderList();
                 renderComparisonList();
+                
+                // Initialisation des écouteurs d'événements pour la recherche
+                initializeEventListeners();
             })
             .catch(error => {
                 console.error("Erreur de chargement des fichiers JSON:", error);
                 searchResultsContainer.innerHTML = `<div class="bg-red-50 border-l-4 border-red-400 p-4"><p class="text-sm text-red-700">Erreur : Impossible de charger les données.</p></div>`;
             });
+
+            // --- INITIALISATION DES ÉCOUTEURS D'ÉVÉNEMENTS ---
+            function initializeEventListeners() {
+                // Recherche dans le mode commande
+                searchInput.addEventListener('input', performSearch);
+                searchField.addEventListener('change', performSearch);
+                
+                // Filtres par source
+                sourceCheckboxes.forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        updateCurrentData();
+                        updateProductCount();
+                        performSearch();
+                    });
+                });
+                
+                // Sélecteur de colonnes
+                columnSelectorBtn.addEventListener('click', toggleColumnSelector);
+                
+                // Bouton nouvelle commande
+                newOrderBtn.addEventListener('click', () => {
+                    if (confirm("Êtes-vous sûr de vouloir créer une nouvelle commande ? Votre commande actuelle sera perdue.")) {
+                        orderList = [];
+                        saveOrderToLocalStorage();
+                        renderOrderList();
+                        showNotification('Nouvelle commande créée', 'success');
+                    }
+                });
+                
+                // Boutons d'export
+                downloadCsvBtn.addEventListener('click', downloadOrderAsCSV);
+                downloadXlsxBtn.addEventListener('click', downloadOrderAsXLSX);
+            }
+            
+            function toggleColumnSelector() {
+                const isHidden = columnSelectorDropdown.classList.contains('hidden');
+                if (isHidden) {
+                    columnSelectorDropdown.classList.remove('hidden');
+                    document.addEventListener('click', closeColumnSelectorOnClickOutside);
+                } else {
+                    columnSelectorDropdown.classList.add('hidden');
+                    document.removeEventListener('click', closeColumnSelectorOnClickOutside);
+                }
+            }
+            
+            function closeColumnSelectorOnClickOutside(e) {
+                if (!columnSelectorBtn.contains(e.target) && !columnSelectorDropdown.contains(e.target)) {
+                    columnSelectorDropdown.classList.add('hidden');
+                    document.removeEventListener('click', closeColumnSelectorOnClickOutside);
+                }
+            }
 
             // --- COMPARE MODE FUNCTIONS ---
             productCodeInput.addEventListener('input', (e) => {
@@ -519,9 +573,10 @@
                 currentProductCode = code;
                 findProductByCode(code);
             });
+            
             function findProductByCode(code) {
                 const allData = [...dataFolkestone, ...dataVendome, ...dataWashington, ...dataLeHavre];
-                const codes = code.includes(' ') ? code.split(' ') : [code];
+                const codes = code.includes(' ') ? code.split(' ').filter(c => c.trim()) : [code];
                 
                 if (codes.length > 1) {
                     // Traitement des multiples codes
@@ -574,7 +629,8 @@
                     priceComparisonResults.classList.add('hidden');
                     return;
                 }
-// Group by product name (first product's name)
+
+                // Group by product name (first product's name)
                 const productName = products[0]['Libellé produit'] || 'Produit inconnu';
                 const productBrand = products[0]['Marque'] || 'Marque inconnue';
                 
@@ -683,22 +739,22 @@
                 `;
                 
                 comparisonListData.forEach((item, index) => {
-                    const folkestonePrice = item.prices.find(p => p.source === 'Folkestone')?.priceFormatted || '-';
-                    const vendomePrice = item.prices.find(p => p.source === 'Vendôme')?.priceFormatted || '-';
-                    const washingtonPrice = item.prices.find(p => p.source === 'Washington')?.priceFormatted || '-';
-                    const lehavrePrice = item.prices.find(p => p.source === 'Le Havre')?.priceFormatted || '-';
+                    const folkestonePrice = item.prices.find(p => p.source === 'Folkestone');
+                    const vendomePrice = item.prices.find(p => p.source === 'Vendôme');
+                    const washingtonPrice = item.prices.find(p => p.source === 'Washington');
+                    const lehavrePrice = item.prices.find(p => p.source === 'Le Havre');
                     
                     tableHTML += `
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.code}</td>
-                            <td class="px-6 py-4 text-sm text-gray-500">${item.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.code}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.name}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.brand}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${folkestonePrice}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${vendomePrice}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${washingtonPrice}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${lehavrePrice}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${folkestonePrice ? folkestonePrice.priceFormatted : '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${vendomePrice ? vendomePrice.priceFormatted : '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${washingtonPrice ? washingtonPrice.priceFormatted : '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${lehavrePrice ? lehavrePrice.priceFormatted : '-'}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button class="text-red-500 hover:text-red-700 remove-comparison-item" data-index="${index}">
+                                <button class="text-red-600 hover:text-red-900 remove-from-comparison" data-index="${index}">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </td>
@@ -706,601 +762,444 @@
                     `;
                 });
                 
-                tableHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                `;
-                
+                tableHTML += `</tbody></table></div>`;
                 comparisonList.innerHTML = tableHTML;
                 
                 // Add event listeners to remove buttons
-                document.querySelectorAll('.remove-comparison-item').forEach(btn => {
+                document.querySelectorAll('.remove-from-comparison').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        const index = parseInt(e.target.closest('button').dataset.index);
+                        const index = parseInt(e.currentTarget.dataset.index);
                         comparisonListData.splice(index, 1);
                         saveComparisonToLocalStorage();
                         renderComparisonList();
-                        showNotification('Produit retiré de la liste de comparaison', 'info');
+                        updateAddToComparisonButton();
+                        showNotification('Produit retiré de la liste de comparaison', 'success');
                     });
                 });
             }
 
-            // --- EXPORT COMPARISON FUNCTIONS ---
-            exportComparisonCsvBtn.addEventListener('click', exportComparisonAsCSV);
-            exportComparisonXlsxBtn.addEventListener('click', exportComparisonAsXLSX);
-
-            function exportComparisonAsCSV() {
+            // --- EXPORT FUNCTIONS ---
+            exportComparisonCsvBtn.addEventListener('click', () => {
+                exportComparisonList('csv');
+            });
+            
+            exportComparisonXlsxBtn.addEventListener('click', () => {
+                exportComparisonList('xlsx');
+            });
+            
+            function exportComparisonList(format) {
                 if (comparisonListData.length === 0) {
-                    showNotification('Aucun produit à exporter', 'warning');
+                    showNotification('La liste de comparaison est vide', 'error');
                     return;
                 }
                 
                 const headers = ['Code', 'Produit', 'Marque', 'Folkestone', 'Vendôme', 'Washington', 'Le Havre'];
-                const csvContent = [
-                    headers.join(';'),
-                    ...comparisonListData.map(item => {
-                        const folkestonePrice = item.prices.find(p => p.source === 'Folkestone')?.price || '';
-                        const vendomePrice = item.prices.find(p => p.source === 'Vendôme')?.price || '';
-                        const washingtonPrice = item.prices.find(p => p.source === 'Washington')?.price || '';
-                        const lehavrePrice = item.prices.find(p => p.source === 'Le Havre')?.price || '';
-                        
-                        return [
-                            item.code,
-                            `"${item.name}"`,
-                            `"${item.brand}"`,
-                            folkestonePrice,
-                            vendomePrice,
-                            washingtonPrice,
-                            lehavrePrice
-                        ].join(';');
-                    })
-                ].join('\n');
+                const rows = comparisonListData.map(item => {
+                    const folkestonePrice = item.prices.find(p => p.source === 'Folkestone');
+                    const vendomePrice = item.prices.find(p => p.source === 'Vendôme');
+                    const washingtonPrice = item.prices.find(p => p.source === 'Washington');
+                    const lehavrePrice = item.prices.find(p => p.source === 'Le Havre');
+                    
+                    return [
+                        item.code,
+                        item.name,
+                        item.brand,
+                        folkestonePrice ? folkestonePrice.price : '',
+                        vendomePrice ? vendomePrice.price : '',
+                        washingtonPrice ? washingtonPrice.price : '',
+                        lehavrePrice ? lehavrePrice.price : ''
+                    ];
+                });
                 
-                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                if (format === 'csv') {
+                    downloadComparisonCsv([headers, ...rows]);
+                } else {
+                    downloadComparisonXlsx([headers, ...rows]);
+                }
+            }
+            
+            function downloadComparisonCsv(data) {
+                const csvContent = data.map(row => 
+                    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
+                ).join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `comparaison_mercuriales_${new Date().toISOString().slice(0,10)}.csv`;
+                link.setAttribute('href', url);
+                link.setAttribute('download', `comparaison_mercuriale_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
                 link.click();
-                URL.revokeObjectURL(link.href);
+                document.body.removeChild(link);
             }
-
-            function exportComparisonAsXLSX() {
-                if (comparisonListData.length === 0) {
-                    showNotification('Aucun produit à exporter', 'warning');
-                    return;
-                }
-                
-                const headers = ['Code', 'Produit', 'Marque', 'Folkestone', 'Vendôme', 'Washington', 'Le Havre'];
-                const wsData = [
-                    headers,
-                    ...comparisonListData.map(item => {
-                        const folkestonePrice = item.prices.find(p => p.source === 'Folkestone')?.price || null;
-                        const vendomePrice = item.prices.find(p => p.source === 'Vendôme')?.price || null;
-                        const washingtonPrice = item.prices.find(p => p.source === 'Washington')?.price || null;
-                        const lehavrePrice = item.prices.find(p => p.source === 'Le Havre')?.price || null;
-                        
-                        return [
-                            item.code,
-                            item.name,
-                            item.brand,
-                            folkestonePrice,
-                            vendomePrice,
-                            washingtonPrice,
-                            lehavrePrice
-                        ];
-                    })
-                ];
-                
-                const ws = XLSX.utils.aoa_to_sheet(wsData);
-                
-                // Mise en forme des colonnes de prix
-                const currencyFormat = '#,##0.00" €"';
-                for(let i = 1; i < wsData.length; i++) {
-                    for(let j = 3; j < 7; j++) {
-                        if (wsData[i][j] !== null) {
-                            const cellAddress = XLSX.utils.encode_cell({r: i, c: j});
-                            if(ws[cellAddress]) ws[cellAddress].z = currencyFormat;
-                        }
-                    }
-                }
-                
-                ws['!cols'] = [
-                    { wch: 10 },  // Code
-                    { wch: 40 },  // Produit
-                    { wch: 20 },  // Marque
-                    { wch: 12 },  // Folkestone
-                    { wch: 12 },  // Vendôme
-                    { wch: 12 },  // Washington
-                    { wch: 12 }   // Le Havre
-                ];
-
+            
+            function downloadComparisonXlsx(data) {
+                const ws = XLSX.utils.aoa_to_sheet(data);
                 const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Comparaison");
-                XLSX.writeFile(wb, `comparaison_mercuriales_${new Date().toISOString().slice(0,10)}.xlsx`);
+                XLSX.utils.book_append_sheet(wb, ws, 'Comparaison');
+                XLSX.writeFile(wb, `comparaison_mercuriale_${new Date().toISOString().slice(0,10)}.xlsx`);
             }
 
-            // --- ORDER MODE FUNCTIONS (existing functions) ---
-            function populateColumnSelector() {
-                columnCheckboxesContainer.innerHTML = '';
-                allHeaders.forEach(header => {
-                    const isChecked = visibleColumns.includes(header);
-                    const checkboxHTML = `
-                        <label class="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded-md cursor-pointer">
-                            <input type="checkbox" value="${header}" ${isChecked ? 'checked' : ''}
-                                   class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 column-checkbox">
-                            <span class="text-sm text-gray-700">${header}</span>
-                        </label>`;
-                    columnCheckboxesContainer.insertAdjacentHTML('beforeend', checkboxHTML);
-                });
-                
-                document.querySelectorAll('.column-checkbox').forEach(cb => cb.addEventListener('change', handleColumnSelectionChange));
-            }
-            
-            function handleColumnSelectionChange(e) {
-                const { value, checked } = e.target;
-                if (checked) {
-                    visibleColumns.push(value);
-                } else {
-                    visibleColumns = visibleColumns.filter(col => col !== value);
-                }
-                saveColumnsToLocalStorage();
-                displaySearchResults(lastSearchResults, searchInput.value.trim().toLowerCase());
-                renderOrderList();
-            }
-            function performSearch() {
-                const query = searchInput.value.trim();
-                const field = searchField.value;
-
-                if (query.length === 0) {
-                    lastSearchResults = [];
-                    displaySearchResults([], "");
-                    return;
-                }
-
-                // Recherche multi-codes avec ESPACE comme séparateur
-                if (field === 'Code Produit' && query.includes(' ')) {
-                    const codes = query.split(' ').filter(code => code.trim().length > 0);
-                    lastSearchResults = [];
-                    
-                    // Pour chaque code, trouver tous les produits correspondants dans chaque source
-                    codes.forEach(code => {
-                        currentData.forEach(item => {
-                            const itemCode = String(item['Code Produit'] ?? '').trim();
-                            if (itemCode === code) {
-                                lastSearchResults.push(item);
-                            }
-                        });
-                    });
-                } else {
-const lowerCaseQuery = query.toLowerCase();
-                    lastSearchResults = currentData.filter(item => {
-                        if (field === "all") return Object.values(item).some(val => String(val).toLowerCase().includes(lowerCaseQuery));
-                        return (item[field]?.toString().toLowerCase() || '').includes(lowerCaseQuery);
-                    });
-                }
-                displaySearchResults(lastSearchResults, query);
-            }
-function displaySearchResults(results, query) {
-                if (results.length === 0) {
-                    if (query.length > 0) {
-                        let message = `Aucun résultat pour "<strong>${query}</strong>"`;
-                        
-                        // Message spécifique pour la recherche multi-codes
-                        if (searchField.value === 'Code Produit' && isMultiCodeSearch(query)) {
-                            const codes = extractProductCodes(query);
-                            message = `Aucun résultat pour les codes : <strong>${codes.join(', ')}</strong>`;
-                        }
-                        
-                        searchResultsContainer.innerHTML = `<div class="text-center py-8 px-4"><p class="text-gray-500">${message}</p></div>`;
-                    } else {
-                        updatePlaceholder();
-                    }
-                    return;
-                }
-                // Afficher un indicateur pour la recherche multi-codes
-                let infoHTML = '';
-                if (searchField.value === 'Code Produit' && query.includes(' ')) {
-                    const codes = query.split(' ').filter(code => code.trim().length > 0);
-                    const foundCount = results.length;
-                    const totalCodes = codes.length;
-                    
-                    infoHTML = `
-                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
-                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                                <div class="flex items-center mb-2 sm:mb-0">
-                                    <div class="flex-shrink-0">
-                                        <i class="fas fa-info-circle text-blue-400"></i>
-                                    </div>
-                                    <div class="ml-3">
-                                        <p class="text-sm text-blue-700">
-                                            Recherche multi-codes : ${foundCount}/${totalCodes} codes trouvés
-                                        </p>
-                                    </div>
-                                </div>
-                                <button id="addAllResultsBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center justify-center hover:scale-105 transition-transform">
-                                    <i class="fas fa-cart-plus mr-2"></i>Ajouter tout à la commande
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }
-searchResultsContainer.innerHTML = infoHTML + createTableHTML(results, 'search', query);
-                
-                // Ajouter l'événement pour le bouton "Ajouter tout"
-                const addAllBtn = document.getElementById('addAllResultsBtn');
-                if (addAllBtn) {
-                    addAllBtn.addEventListener('click', () => {
-                        addAllSearchResultsToOrder(results);
-                    });
-                }
-            }
-
-            function addAllSearchResultsToOrder(results) {
-                if (!results || results.length === 0) {
-                    showNotification('Aucun article à ajouter', 'warning');
-                    return;
-                }
-                
-                let addedCount = 0;
-                let skippedCount = 0;
-                
-                results.forEach(product => {
-                    const isAlreadyInOrder = orderList.some(p => 
-                        p["Code Produit"] == product["Code Produit"] && p._source === product._source
-                    );
-                    
-                    if (!isAlreadyInOrder) {
-                        orderList.push({
-                            ...product,
-                            _quantity: 1
-                        });
-                        addedCount++;
-                    } else {
-                        skippedCount++;
-                    }
-                });
-                
-                saveOrderToLocalStorage();
-                renderOrderList();
-                
-                // Notification détaillée
-                let message = `${addedCount} article(s) ajouté(s) à la commande`;
-                if (skippedCount > 0) {
-                    message += `, ${skippedCount} article(s) déjà présent(s)`;
-                }
-                
-                showNotification(message, addedCount > 0 ? 'success' : 'info');
-            }
-            
-            function createTableHTML(data, type, query = '') {
-                const isOrder = type === 'order';
-                const isMultiCode = type === 'search' && searchField.value === 'Code Produit' && query.includes(' ');
-                const codesToHighlight = isMultiCode ? query.split(' ').filter(code => code.trim().length > 0) : [];
-return `
-                    <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-100 sticky top-0 z-10">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">Source</th>
-                                    ${visibleColumns.map(header => `<th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">${header}</th>`).join('')}
-                                    ${isOrder ? '<th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">Quantité</th>' : ''}
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider whitespace-nowrap">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                ${data.map(item => `
-                                    <tr class="hover:bg-gray-50">
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getSourceColor(item._source)}">
-                                                ${item._source}
-                                            </span>
-                                        </td>
-                                        ${visibleColumns.map(header => {
-                                            let cellContent = item[header] ?? '';
-                                            
-                                            // Appliquer le surlignage approprié
-                                            if (isMultiCode) {
-                                                cellContent = highlightMultiCodes(cellContent, codesToHighlight);
-                                            } else if (query && header === searchField.value) {
-                                                cellContent = highlightText(cellContent, query);
-                                            }
-                                            
-                                            // Formatage spécial pour les prix
-                                            if (header === 'Prix') {
-                                                cellContent = formatPriceFromFloat(parsePriceAsFloat(item[header]));
-                                            }
-                                            
-                                            return `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${cellContent}</td>`;
-                                        }).join('')}
-                                        ${isOrder ? `
-                                            <td class="px-6 py-4 whitespace-nowrap">
-                                                <input type="number" min="0" value="${item._quantity || 1}" class="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm quantity-input"
-                                                       data-code="${item['Code Produit']}" data-source="${item._source}">
-                                            </td>
-                                        ` : ''}
-                                        <td class="px-6 py-4 whitespace-nowrap text-left text-sm font-medium">
-                                            ${getActionButtonHTML(item, type)}
-                                        </td>
-                                    </tr>
-                                    ${!isOrder ? `<tr><td colspan="${visibleColumns.length + 2}" class="p-0">${showPriceComparison(item["Code Produit"])}</td></tr>` : ''}
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>`;
-            }
-
-            function renderOrderList() {
-                orderCountElement.textContent = orderList.length;
-                if (orderList.length === 0) {
-                    orderListContainer.innerHTML = `<p class="text-center text-gray-500 py-8 px-4">Aucun article ajouté.</p>`;
-                    downloadCsvBtn.disabled = true;
-                    downloadXlsxBtn.disabled = true;
-                } else {
-                    orderListContainer.innerHTML = createTableHTML(orderList, 'order');
-                    downloadCsvBtn.disabled = false;
-                    downloadXlsxBtn.disabled = false;
-                }
-                updateOrderTotal();
-            }
-
-            // --- FONCTIONS UTILITAIRES ---
+            // --- ORDER MODE FUNCTIONS ---
             function updateCurrentData() {
-                const selectedSources = Array.from(sourceCheckboxes).filter(cb => cb.checked).map(cb => cb.value);
                 currentData = [];
-                if (selectedSources.includes('folkestone')) currentData.push(...dataFolkestone);
-                if (selectedSources.includes('vendome')) currentData.push(...dataVendome);
-                if (selectedSources.includes('washington')) currentData.push(...dataWashington);
-                if (selectedSources.includes('lehavre')) currentData.push(...dataLeHavre);
-            }
-            
-            function addProductToOrder(code, source) {
-                if (orderList.some(p => p["Code Produit"] == code && p._source === source)) {
-                    showNotification(`Cet article est déjà dans la commande.`, 'warning'); return;
+                if (document.querySelector('input[name="source"][value="folkestone"]').checked) {
+                    currentData = currentData.concat(dataFolkestone);
                 }
-                const allData = [...dataFolkestone, ...dataVendome, ...dataWashington, ...dataLeHavre];
-                const product = allData.find(p => p["Code Produit"] == code && p._source === source);
-                if (product) {
-                    orderList.push({...product, _quantity: 1});
-                    saveOrderToLocalStorage();
-                    renderOrderList();
-                    showNotification('Article ajouté', 'success');
+                if (document.querySelector('input[name="source"][value="vendome"]').checked) {
+                    currentData = currentData.concat(dataVendome);
                 }
-            }
-
-            function removeProductFromOrder(code, source) {
-                orderList = orderList.filter(p => !(p["Code Produit"] == code && p._source === source));
-                saveOrderToLocalStorage();
-                renderOrderList();
-                showNotification('Article retiré', 'info');
-            }
-            
-            function showPriceComparison(productCode) {
-                if (!productCode) return '';
-                const allProducts = [...dataFolkestone, ...dataVendome, ...dataWashington, ...dataLeHavre];
-                const sameProducts = allProducts.filter(p => p["Code Produit"] == productCode);
-                
-                if (sameProducts.length <= 1) return '';
-
-                return `
-                    <div class="m-2 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                        <h4 class="text-sm font-semibold text-indigo-800 mb-2 flex items-center">
-                            <i class="fas fa-chart-line mr-2"></i>Comparaison des prix
-                        </h4>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                            ${sameProducts.map(product => `
-                                <div class="text-center p-2 bg-white rounded border">
-                                    <div class="font-medium ${getSourceColor(product._source).replace('bg-', 'text-').split(' ')[0]}">${product._source}</div>
-                                    <div class="text-gray-800 font-bold mt-1">${formatPriceFromFloat(parsePriceAsFloat(product.Prix))}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>`;
-            }
-
-            function updateProductQuantity(code, source, newQuantity) {
-                const productIndex = orderList.findIndex(p => p["Code Produit"] == code && p._source === source);
-                if (productIndex !== -1) {
-                    const quantity = parseInt(newQuantity);
-                    if (isNaN(quantity) || quantity <= 0) {
-                        orderList.splice(productIndex, 1);
-                    } else {
-                        orderList[productIndex]._quantity = quantity;
-                    }
-                    saveOrderToLocalStorage();
-                    renderOrderList();
+                if (document.querySelector('input[name="source"][value="washington"]').checked) {
+                    currentData = currentData.concat(dataWashington);
                 }
-            }
-
-            function updateOrderTotal() {
-                let totalElement = document.getElementById('orderTotal');
-                if (orderList.length === 0) {
-                    totalElement?.remove();
-                    return;
-                }
-                
-                // Calcul en centimes pour la précision
-                const totalInCents = orderList.reduce((sum, p) => {
-                    const priceInCents = parsePriceAsCents(p.Prix);
-                    const quantity = p._quantity || 1;
-                    return sum + (priceInCents * quantity);
-                }, 0);
-                
-                if (!totalElement) {
-                    totalElement = document.createElement('div');
-                    totalElement.id = 'orderTotal';
-                    totalElement.className = 'mt-4 p-4 bg-green-50 border-l-4 border-green-400';
-                    orderListContainer.parentNode.insertBefore(totalElement, orderListContainer.nextSibling);
-                }
-                totalElement.innerHTML = `
-                    <div class="flex justify-between items-center">
-                        <span class="font-semibold text-green-800 text-lg">Total de la commande :</span>
-                        <span class="text-2xl font-bold text-green-700">${formatPriceFromCents(totalInCents)}</span>
-                    </div>`;
-            }
-            
-            // --- FONCTIONS DE GESTION DES PRIX ---
-            function parsePriceAsFloat(priceStr) {
-                if (typeof priceStr !== 'string') priceStr = String(priceStr);
-                return parseFloat(priceStr.replace(',', '.')) || 0;
-            }
-
-            function parsePriceAsCents(priceStr) {
-                const priceFloat = parsePriceAsFloat(priceStr);
-                return Math.round(priceFloat * 100);
-            }
-
-            function formatPriceFromFloat(priceFloat) {
-                return (priceFloat || 0).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' });
-            }
-            
-            function formatPriceFromCents(priceInCents) {
-                return formatPriceFromFloat((priceInCents || 0) / 100);
-            }
-            
-            function initializeModals() {
-                settingsBtn.addEventListener('click', (e) => { e.preventDefault(); settingsModal.classList.remove('hidden'); });
-                contactBtn.addEventListener('click', (e) => { e.preventDefault(); contactModal.classList.remove('hidden'); });
-                
-                closeModalBtns.forEach(btn => btn.addEventListener('click', () => {
-                    settingsModal.classList.add('hidden');
-                    contactModal.classList.add('hidden');
-                }));
-
-                resetAppBtn.addEventListener('click', () => {
-                    if (confirm("Êtes-vous sûr de vouloir tout réinitialiser ? Votre commande et vos préférences de colonnes seront perdues.")) {
-                        localStorage.removeItem('mercurialeOrder');
-                        localStorage.removeItem('mercurialeColumns');
-                        localStorage.removeItem('mercurialeComparison');
-                        location.reload();
-                    }
-                });
-            }
-
-            // --- FONCTIONS D'EXPORT ---
-            function downloadOrderAsCSV() {
-                const headers = ['Source', ...visibleColumns, 'Quantité', 'Total'];
-                const csvContent = [
-                    headers.join(';'),
-                    ...orderList.map(row => {
-                        const total = (parsePriceAsFloat(row.Prix) * (row._quantity || 1)).toFixed(2).replace('.', ',');
-                        const values = [
-                            row._source, 
-                            ...visibleColumns.map(h => row[h] ?? ''),
-                            row._quantity || 1,
-                            total
-                        ];
-                        return values.map(v => `"${String(v).replace(/"/g, '""')}"`).join(';');
-                    })
-                ].join('\n');
-                
-                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `commande_${new Date().toISOString().slice(0,10)}.csv`;
-                link.click();
-                URL.revokeObjectURL(link.href);
-            }
-
-            function downloadOrderAsXLSX() {
-                const headers = ['Source', ...visibleColumns, 'Quantité', 'Total'];
-                const wsData = [
-                    headers, 
-                    ...orderList.map(row => {
-                        const price = parsePriceAsFloat(row.Prix);
-                        const quantity = row._quantity || 1;
-                        return [
-                            row._source, 
-                            ...visibleColumns.map(h => (h === 'Prix') ? price : (row[h] ?? '')),
-                            quantity,
-                            price * quantity
-                        ];
-                    })
-                ];
-                const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-                // Mise en forme des colonnes
-                const priceColIndex = visibleColumns.indexOf('Prix') + 1; // +1 pour la colonne "Source"
-                const totalColIndex = headers.length - 1;
-                const currencyFormat = '#,##0.00" €"';
-
-                for(let i = 1; i < wsData.length; i++) { // Boucle sur les lignes de données
-                    const priceCellAddress = XLSX.utils.encode_cell({r: i, c: priceColIndex});
-                    const totalCellAddress = XLSX.utils.encode_cell({r: i, c: totalColIndex});
-                    if(ws[priceCellAddress]) ws[priceCellAddress].z = currencyFormat;
-                    if(ws[totalCellAddress]) ws[totalCellAddress].z = currencyFormat;
-                }
-                
-                ws['!cols'] = headers.map(h => ({ wch: (h === 'Libellé produit') ? 40 : 15 }));
-
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Commande");
-                XLSX.writeFile(wb, `commande_${new Date().toISOString().slice(0,10)}.xlsx`);
-            }
-
-            // --- FONCTIONS AUXILIAIRES ---
-            function getActionButtonHTML(item, type) {
-                const dataAttrs = `data-code="${item["Code Produit"]}" data-source="${item._source}"`;
-                const isInOrder = orderList.some(p => p["Code Produit"] == item["Code Produit"] && p._source === item._source);
-                
-                if (type === 'search') {
-                    if (isInOrder) {
-                        return `
-                            <div class="flex flex-col items-center space-y-1">
-                                <button class="bg-green-500 text-white px-3 py-1 rounded-md text-xs flex items-center cursor-not-allowed" disabled>
-                                    <i class="fas fa-check mr-1"></i>Déjà ajouté
-                                </button>
-                                <button class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs flex items-center btn-remove-from-search" ${dataAttrs}>
-                                    <i class="fas fa-minus mr-1"></i>Retirer
-                                </button>
-                            </div>`;
-                    } else {
-                        return `<button class="btn-primary text-white px-3 py-1 rounded-md text-xs flex items-center btn-add" ${dataAttrs}><i class="fas fa-plus mr-1"></i>Ajouter</button>`;
-                    }
-                }
-                return `<button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-md text-xs flex items-center btn-remove" ${dataAttrs}><i class="fas fa-trash-alt mr-1"></i>Supprimer</button>`;
-            }
-
-            function getSourceColor(source) {
-                switch(source) {
-                    case 'Folkestone': return 'bg-blue-100 text-blue-800';
-                    case 'Vendôme': return 'bg-purple-100 text-purple-800';
-                    case 'Washington': return 'bg-green-100 text-green-800';
-                    case 'Le Havre': return 'bg-orange-100 text-orange-800';
-                    default: return 'bg-gray-100 text-gray-800';
+                if (document.querySelector('input[name="source"][value="lehavre"]').checked) {
+                    currentData = currentData.concat(dataLeHavre);
                 }
             }
 
             function updateProductCount() {
-                productCountElement.textContent = `${currentData.length} produits`;
+                const count = currentData.length;
+                productCountElement.textContent = `${count.toLocaleString()} produits`;
             }
-            function highlightText(text, query) {
-                const content = text ?? '';
-                if (!query || !content) return content;
+
+            function performSearch() {
+                const searchTerm = searchInput.value.trim();
+                const searchFieldValue = searchField.value;
                 
-                // Ne pas surligner si c'est une recherche multi-codes
-                if (searchField.value === 'Code Produit' && query.includes(' ')) {
-                    return content;
+                if (!searchTerm) {
+                    searchResultsContainer.innerHTML = '<p class="text-center text-gray-500 py-8 px-4">Commencez à taper pour rechercher...</p>';
+                    lastSearchResults = [];
+                    return;
                 }
-return String(content).replace(
-                    new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})`, 'gi'), 
-                    '<span class="search-highlight">$1</span>'
-                );
+                
+                // Check if search term contains multiple product codes
+                if (searchTerm.includes(' ')) {
+                    const codes = searchTerm.split(' ').filter(c => c.trim());
+                    if (codes.length > 1) {
+                        // Search by multiple codes
+                        const results = [];
+                        codes.forEach(code => {
+                            const codeResults = currentData.filter(product => {
+                                return String(product['Code Produit'] ?? '').trim() === code;
+                            });
+                            results.push(...codeResults);
+                        });
+                        
+                        lastSearchResults = results;
+                        renderSearchResults(results);
+                        return;
+                    }
+                }
+                
+                // Regular search
+                const results = currentData.filter(product => {
+                    if (searchFieldValue === 'all') {
+                        return Object.values(product).some(value => 
+                            String(value).toLowerCase().includes(searchTerm.toLowerCase())
+                        );
+                    } else {
+                        const fieldValue = product[searchFieldValue];
+                        return fieldValue && String(fieldValue).toLowerCase().includes(searchTerm.toLowerCase());
+                    }
+                });
+                
+                lastSearchResults = results;
+                renderSearchResults(results);
             }
-            
-            function updatePlaceholder() {
-                searchResultsContainer.innerHTML = `<div class="text-center py-8 px-4"><p class="text-gray-500">Commencez à taper pour rechercher...</p></div>`;
+
+            function renderSearchResults(results) {
+                if (results.length === 0) {
+                    searchResultsContainer.innerHTML = '<p class="text-center text-gray-500 py-8 px-4">Aucun résultat trouvé.</p>';
+                    return;
+                }
+                
+                let tableHTML = `
+                    <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Source</th>
+                                    ${visibleColumns.map(col => 
+                                        `<th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">${col}</th>`
+                                    ).join('')}
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                results.forEach(product => {
+                    const isInOrderList = orderList.some(item => 
+                        item['Code Produit'] === product['Code Produit'] && item._source === product._source
+                    );
+                    
+                    tableHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product._source}</td>
+                            ${visibleColumns.map(col => 
+                                `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product[col] || '-'}</td>`
+                            ).join('')}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="add-to-order-btn ${isInOrderList ? 'status-added text-white px-3 py-1 rounded-full text-xs' : 'text-indigo-600 hover:text-indigo-900'}" 
+                                        data-source="${product._source}" 
+                                        data-code="${product['Code Produit']}">
+                                    ${isInOrderList ? 
+                                        '<i class="fas fa-check mr-1"></i>Déjà ajouté' : 
+                                        '<i class="fas fa-plus mr-1"></i>Ajouter'}
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `</tbody></table></div>`;
+                searchResultsContainer.innerHTML = tableHTML;
+                
+                // Add event listeners to "Add to order" buttons
+                document.querySelectorAll('.add-to-order-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const source = e.currentTarget.dataset.source;
+                        const code = e.currentTarget.dataset.code;
+                        addProductToOrder(source, code);
+                    });
+                });
+            }
+
+            function addProductToOrder(source, code) {
+                const product = currentData.find(p => p._source === source && p['Code Produit'] == code);
+                if (!product) return;
+                
+                // Check if product is already in order list
+                const existingIndex = orderList.findIndex(item => 
+                    item['Code Produit'] === product['Code Produit'] && item._source === product._source
+                );
+                
+                if (existingIndex !== -1) {
+                    showNotification('Ce produit est déjà dans votre commande', 'warning');
+                    return;
+                }
+                
+                orderList.push(product);
+                saveOrderToLocalStorage();
+                renderOrderList();
+                renderSearchResults(lastSearchResults);
+                showNotification('Produit ajouté à la commande', 'success');
+            }
+
+            function renderOrderList() {
+                if (orderList.length === 0) {
+                    orderListContainer.innerHTML = '<p class="text-center text-gray-500 py-8 px-4">Aucun article ajouté.</p>';
+                    orderCountElement.textContent = '0';
+                    downloadCsvBtn.disabled = true;
+                    downloadXlsxBtn.disabled = true;
+                    return;
+                }
+                
+                orderCountElement.textContent = orderList.length;
+                downloadCsvBtn.disabled = false;
+                downloadXlsxBtn.disabled = false;
+                
+                let tableHTML = `
+                    <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Source</th>
+                                    ${visibleColumns.map(col => 
+                                        `<th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">${col}</th>`
+                                    ).join('')}
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                orderList.forEach((product, index) => {
+                    tableHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${product._source}</td>
+                            ${visibleColumns.map(col => 
+                                `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product[col] || '-'}</td>`
+                            ).join('')}
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-red-600 hover:text-red-900 remove-from-order" data-index="${index}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `</tbody></table></div>`;
+                orderListContainer.innerHTML = tableHTML;
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-from-order').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.currentTarget.dataset.index);
+                        orderList.splice(index, 1);
+                        saveOrderToLocalStorage();
+                        renderOrderList();
+                        renderSearchResults(lastSearchResults);
+                        showNotification('Produit retiré de la commande', 'success');
+                    });
+                });
+            }
+
+            function populateColumnSelector() {
+                columnCheckboxesContainer.innerHTML = '';
+                
+                allHeaders.forEach(header => {
+                    const isChecked = visibleColumns.includes(header);
+                    const checkboxHTML = `
+                        <div class="flex items-center mb-2">
+                            <input type="checkbox" id="col-${header}" value="${header}" ${isChecked ? 'checked' : ''} 
+                                   class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500 column-checkbox">
+                            <label for="col-${header}" class="ml-2 text-sm text-gray-700">${header}</label>
+                        </div>
+                    `;
+                    columnCheckboxesContainer.innerHTML += checkboxHTML;
+                });
+                
+                // Add event listeners to column checkboxes
+                document.querySelectorAll('.column-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        const column = e.target.value;
+                        const isChecked = e.target.checked;
+                        
+                        if (isChecked) {
+                            if (!visibleColumns.includes(column)) {
+                                visibleColumns.push(column);
+                            }
+                        } else {
+                            const index = visibleColumns.indexOf(column);
+                            if (index !== -1) {
+                                visibleColumns.splice(index, 1);
+                            }
+                        }
+                        
+                        saveColumnsToLocalStorage();
+                        renderSearchResults(lastSearchResults);
+                        renderOrderList();
+                    });
+                });
+            }
+
+            function downloadOrderAsCSV() {
+                if (orderList.length === 0) return;
+                
+                const headers = ['Source', ...visibleColumns];
+                const rows = orderList.map(product => {
+                    const row = [product._source];
+                    visibleColumns.forEach(col => {
+                        row.push(product[col] || '');
+                    });
+                    return row;
+                });
+                
+                const csvContent = [headers, ...rows]
+                    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                    .join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', `commande_mercuriale_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            function downloadOrderAsXLSX() {
+                if (orderList.length === 0) return;
+                
+                const headers = ['Source', ...visibleColumns];
+                const rows = orderList.map(product => {
+                    const row = [product._source];
+                    visibleColumns.forEach(col => {
+                        row.push(product[col] || '');
+                    });
+                    return row;
+                });
+                
+                const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Commande');
+                XLSX.writeFile(wb, `commande_mercuriale_${new Date().toISOString().slice(0,10)}.xlsx`);
+            }
+
+            // --- UTILITY FUNCTIONS ---
+            function parsePriceAsFloat(priceStr) {
+                if (!priceStr) return 0;
+                const cleaned = String(priceStr).replace(/[^\d,.]/g, '').replace(',', '.');
+                return parseFloat(cleaned) || 0;
+            }
+
+            function formatPriceFromFloat(price) {
+                return new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'EUR'
+                }).format(price);
             }
 
             function showNotification(message, type = 'info') {
+                // Create notification element
                 const notification = document.createElement('div');
-                const icons = {'success': 'fa-check-circle', 'error': 'fa-exclamation-circle', 'warning': 'fa-exclamation-triangle', 'info': 'fa-info-circle'};
-                const colors = {'success': 'bg-green-500', 'error': 'bg-red-500', 'warning': 'bg-yellow-500', 'info': 'bg-blue-500'};
-                notification.className = `fixed bottom-4 right-4 text-white px-4 py-3 rounded-md shadow-lg flex items-center z-50 transition-all duration-300 transform translate-y-16 opacity-0 ${colors[type] || colors['info']}`;
-                notification.innerHTML = `<i class="fas ${icons[type] || icons['info']} mr-2"></i><span>${message}</span>`;
+                notification.className = `fixed top-4 right-4 z-50 p-4 rounded-md shadow-md text-white max-w-sm transform transition-transform duration-300 ease-in-out ${
+                    type === 'success' ? 'bg-green-500' : 
+                    type === 'error' ? 'bg-red-500' : 
+                    type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'
+                }`;
+                
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-2"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
+                
                 document.body.appendChild(notification);
-                setTimeout(() => { notification.classList.remove('translate-y-16', 'opacity-0'); }, 10);
-                setTimeout(() => { notification.classList.add('opacity-0', 'translate-y-4'); setTimeout(() => notification.remove(), 300); }, 3000);
+                
+                // Remove notification after 3 seconds
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }, 3000);
+            }
+
+            function initializeModals() {
+                // Settings modal
+                settingsBtn.addEventListener('click', () => {
+                    settingsModal.classList.remove('hidden');
+                });
+                
+                // Contact modal
+                contactBtn.addEventListener('click', () => {
+                    contactModal.classList.remove('hidden');
+                });
+                
+                // Close modals
+                closeModalBtns.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        settingsModal.classList.add('hidden');
+                        contactModal.classList.add('hidden');
+                    });
+                });
+                
+                // Reset app button
+                resetAppBtn.addEventListener('click', () => {
+                    if (confirm("Êtes-vous sûr de vouloir réinitialiser l'application ? Toutes vos données seront perdues.")) {
+                        localStorage.clear();
+                        location.reload();
+                    }
+                });
             }
         });
     </script>
