@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>MERCURIALE – Comparateur & Commande</title>
+    <title>MERCURIO – Comparateur & Commande</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -34,6 +34,16 @@
             transform: translateY(0);
         }
 
+        .btn-secondary {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+
         /* Style de la barre de défilement personnalisée */
         .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
@@ -61,6 +71,7 @@
             border-radius: 2px;
             font-weight: 600;
         }
+        
         /* Animation pour le bouton Ajouter tout */
         @keyframes pulse-gentle {
             0% { transform: scale(1); }
@@ -82,6 +93,86 @@
         .status-added {
             background: linear-gradient(135deg, #10b981, #059669);
         }
+        
+        /* Style pour le bouton Nouvelle Commande */
+        .btn-reset {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            transition: all 0.2s;
+        }
+        
+        .btn-reset:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+        }
+
+        /* Mode sélection */
+        .mode-selector {
+            display: flex;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 0.75rem 1rem;
+            text-align: center;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            background-color: #e0e7ff;
+            color: #4f46e5;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #4f46e5, #2563eb);
+            color: white;
+        }
+
+        .mode-btn:first-child {
+            border-top-left-radius: 0.5rem;
+            border-bottom-left-radius: 0.5rem;
+        }
+
+        .mode-btn:last-child {
+            border-top-right-radius: 0.5rem;
+            border-bottom-right-radius: 0.5rem;
+        }
+
+        /* Comparaison de prix */
+        .price-comparison {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .price-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            transition: all 0.2s;
+            background-color: white;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .price-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .price-card-header {
+            font-weight: 600;
+            color: #4f46e5;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-card-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -93,7 +184,7 @@
                     <div>
                         <h1 class="text-3xl font-bold flex items-center">
                             <i class="fas fa-store-alt mr-3"></i>
-                            <span class="gradient-text-header">MERCURIALE</span>
+                            <span class="gradient-text-header">MERCURIO</span>
                         </h1>
                         <p class="text-blue-100 mt-1">Comparez vos mercuriales, préparez et exportez votre commande fournisseur</p>
                     </div>
@@ -108,74 +199,138 @@
 
             <!-- Main Content -->
             <div class="p-6">
-                <!-- Search & Filter Section -->
-                <div class="mb-8">
-                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
-                        <div class="flex flex-wrap gap-3">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="source" value="folkestone" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Folkestone</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="source" value="vendome" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Vendôme</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="source" value="washington" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Washington</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" name="source" value="lehavre" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                                <span class="ml-2 text-gray-700 font-medium">Le Havre</span>
-                            </label>
+                <!-- Mode Selector -->
+                <div class="mode-selector">
+                    <div class="mode-btn active" data-mode="compare">
+                        <i class="fas fa-chart-line mr-2"></i>Comparer les prix
+                    </div>
+                    <div class="mode-btn" data-mode="order">
+                        <i class="fas fa-shopping-cart mr-2"></i>Préparer commande
+                    </div>
+                </div>
+
+                <!-- Compare Mode -->
+                <div id="compareMode">
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-search mr-2 text-indigo-500"></i>Rechercher un produit
+                        </h2>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-barcode text-gray-400"></i>
+                            </div>
+                            <input type="text" id="productCodeInput" placeholder="Entrez un code produit (ex: 12345)..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
+                    </div>
+
+                    <!-- Price Comparison Results -->
+                    <div id="priceComparisonResults" class="hidden">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center">
+                            <i class="fas fa-balance-scale mr-2 text-indigo-500"></i>Comparaison des prix
+                        </h2>
+                        <div id="priceComparisonCards" class="price-comparison"></div>
                         
-                        <div class="flex flex-col sm:flex-row gap-4">
-                            <div class="relative">
-                                <button id="columnSelectorBtn" class="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                                    <i class="fas fa-columns mr-2"></i>
-                                    Afficher les colonnes
-                                    <i class="fas fa-chevron-down ml-2 -mr-1 h-5 w-5"></i>
+                        <div class="mt-6">
+                            <button id="addToComparisonListBtn" class="btn-secondary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+                                <i class="fas fa-plus-circle mr-2"></i>Ajouter à la liste de comparaison
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Comparison List -->
+                    <div id="comparisonListSection" class="mt-8 hidden">
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-lg font-semibold text-gray-800 flex items-center">
+                                <i class="fas fa-list-ul mr-2 text-indigo-500"></i>Liste de comparaison
+                                <span id="comparisonCount" class="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span>
+                            </h2>
+                            <div class="flex space-x-2">
+                                <button id="exportComparisonCsvBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+                                    <i class="fas fa-file-csv mr-2"></i>CSV
                                 </button>
-                                <div id="columnSelectorDropdown" class="hidden origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
-                                    <div class="p-2" id="columnCheckboxes">
-                                        <p class="text-sm text-gray-500 text-center py-2">Chargement...</p>
+                                <button id="exportComparisonXlsxBtn" class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center">
+                                    <i class="fas fa-file-excel mr-2"></i>Excel
+                                </button>
+                            </div>
+                        </div>
+                        <div id="comparisonList" class="border border-gray-200 rounded-lg">
+                            <p class="text-center text-gray-500 py-8 px-4">Aucun article ajouté à la liste de comparaison.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Mode -->
+                <div id="orderMode" class="hidden">
+                    <!-- Search & Filter Section -->
+                    <div class="mb-8">
+                        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                            <div class="flex flex-wrap gap-3">
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="source" value="folkestone" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Folkestone</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="source" value="vendome" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Vendôme</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="source" value="washington" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"><span class="ml-2 text-gray-700 font-medium">Washington</span>
+                                </label>
+                                <label class="inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="source" value="lehavre" checked class="h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                                    <span class="ml-2 text-gray-700 font-medium">Le Havre</span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex flex-col sm:flex-row gap-4">
+                                <div class="relative">
+                                    <button id="columnSelectorBtn" class="w-full sm:w-auto flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                        <i class="fas fa-columns mr-2"></i>
+                                        Afficher les colonnes
+                                        <i class="fas fa-chevron-down ml-2 -mr-1 h-5 w-5"></i>
+                                    </button>
+                                    <div id="columnSelectorDropdown" class="hidden origin-top-right absolute right-0 mt-2 w-64 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+                                        <div class="p-2" id="columnCheckboxes">
+                                            <p class="text-sm text-gray-500 text-center py-2">Chargement...</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="relative w-full sm:w-auto">
-                                <select id="searchField" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-3 pr-10 text-base bg-gray-50">
-                                    <option value="all" selected>Tous les champs</option>
-                                    <option value="Libellé produit">Libellé produit</option>
-                                    <option value="Marque">Marque</option>
-                                    <option value="Code Produit">Code Produit</option>
-                                </select>
+                                <div class="relative w-full sm:w-auto">
+                                    <select id="searchField" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 pl-3 pr-10 text-base bg-gray-50">
+                                        <option value="all" selected>Tous les champs</option>
+                                        <option value="Libellé produit">Libellé produit</option>
+                                        <option value="Marque">Marque</option>
+                                        <option value="Code Produit">Code Produit</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div>
-                        <input type="text" id="searchInput" placeholder="Rechercher un produit, ou plusieurs codes produits séparés par un espace..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
-                </div>
-
-                <!-- Search Results -->
-                <div class="mb-8">
-                    <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center"><i class="fas fa-search mr-2 text-indigo-500"></i>Résultats de recherche</h2>
-                    <div id="searchResults" class="border border-gray-200 rounded-lg">
-                        <p class="text-center text-gray-500 py-8 px-4">Commencez à taper pour rechercher...</p>
-                    </div>
-                </div>
-
-                <!-- Order Section -->
-                <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <h2 class="text-lg font-semibold text-gray-800 flex items-center"><i class="fas fa-shopping-cart mr-2 text-indigo-500"></i>Ma commande<span id="orderCount" class="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span></h2>
-                        <div class="flex space-x-2">
-                            <button id="downloadCsvBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-csv mr-2"></i>CSV</button>
-                            <button id="downloadXlsxBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-excel mr-2"></i>Excel</button>
+                        
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"><i class="fas fa-search text-gray-400"></i></div>
+                            <input type="text" id="searchInput" placeholder="Rechercher un produit, ou plusieurs codes produits séparés par un espace..." autocomplete="off" class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                         </div>
                     </div>
-                    <div id="orderList" class="border border-gray-200 rounded-lg">
-                        <p class="text-center text-gray-500 py-8 px-4">Aucun article ajouté.</p>
+
+                    <!-- Search Results -->
+                    <div class="mb-8">
+                        <h2 class="text-lg font-semibold text-gray-800 mb-3 flex items-center"><i class="fas fa-search mr-2 text-indigo-500"></i>Résultats de recherche</h2>
+                        <div id="searchResults" class="border border-gray-200 rounded-lg">
+                            <p class="text-center text-gray-500 py-8 px-4">Commencez à taper pour rechercher...</p>
+                        </div>
+                    </div>
+
+                    <!-- Order Section -->
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h2 class="text-lg font-semibold text-gray-800 flex items-center"><i class="fas fa-shopping-cart mr-2 text-indigo-500"></i>Ma commande<span id="orderCount" class="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span></h2>
+                            <div class="flex space-x-2">
+                                <button id="newOrderBtn" class="btn-reset text-white px-4 py-2 rounded-md text-sm font-medium flex items-center"><i class="fas fa-trash-alt mr-2"></i>Nouvelle Commande</button>
+                                <button id="downloadCsvBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-csv mr-2"></i>CSV</button>
+                                <button id="downloadXlsxBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-excel mr-2"></i>Excel</button>
+                            </div>
+                        </div>
+                        <div id="orderList" class="border border-gray-200 rounded-lg">
+                            <p class="text-center text-gray-500 py-8 px-4">Aucun article ajouté.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -183,7 +338,7 @@
             <!-- Footer -->
             <div class="bg-gray-50 px-6 py-4 border-t border-gray-200 rounded-b-xl">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between text-sm text-gray-500">
-                    <div class="flex items-center justify-center md:justify-start mb-2 md:mb-0"><i class="fas fa-info-circle mr-2"></i><span>© 2025 MERCURIALE – MyData-Folk</span></div>
+                    <div class="flex items-center justify-center md:justify-start mb-2 md:mb-0"><i class="fas fa-info-circle mr-2"></i><span>© 2025 MERCURIO – MyData-Folk</span></div>
                     <div class="flex items-center justify-center md:justify-end space-x-4">
                         <a href="CONVERTISSEUR/index.html" target="_blank" class="hover:text-indigo-600"><i class="fas fa-sync-alt mr-1"></i>Convertisseur JSON</a>
                         <a href="#" id="settingsBtn" class="hover:text-indigo-600"><i class="fas fa-cog mr-1"></i>Paramètres</a>
@@ -238,6 +393,20 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
+            const modeBtns = document.querySelectorAll('.mode-btn');
+            const compareMode = document.getElementById('compareMode');
+            const orderMode = document.getElementById('orderMode');
+            const productCodeInput = document.getElementById('productCodeInput');
+            const priceComparisonResults = document.getElementById('priceComparisonResults');
+            const priceComparisonCards = document.getElementById('priceComparisonCards');
+            const addToComparisonListBtn = document.getElementById('addToComparisonListBtn');
+            const comparisonListSection = document.getElementById('comparisonListSection');
+            const comparisonList = document.getElementById('comparisonList');
+            const comparisonCount = document.getElementById('comparisonCount');
+            const exportComparisonCsvBtn = document.getElementById('exportComparisonCsvBtn');
+            const exportComparisonXlsxBtn = document.getElementById('exportComparisonXlsxBtn');
+            
+            // Existing DOM elements (from order mode)
             const searchInput = document.getElementById('searchInput');
             const searchField = document.getElementById('searchField');
             const sourceCheckboxes = document.querySelectorAll('input[name="source"]');
@@ -250,6 +419,8 @@
             const columnSelectorBtn = document.getElementById('columnSelectorBtn');
             const columnSelectorDropdown = document.getElementById('columnSelectorDropdown');
             const columnCheckboxesContainer = document.getElementById('columnCheckboxes');
+            const newOrderBtn = document.getElementById('newOrderBtn');
+            
             // Modal Elements
             const settingsBtn = document.getElementById('settingsBtn');
             const contactBtn = document.getElementById('contactBtn');
@@ -262,14 +433,19 @@
             let dataFolkestone = [], dataVendome = [], dataWashington = [], dataLeHavre = [];
             let currentData = [], orderList = [], lastSearchResults = [];
             let allHeaders = [], visibleColumns = [];
+            let comparisonListData = [];
+            let currentProductCode = null;
+            let currentProductDetails = null;
 
             // --- LOCALSTORAGE ---
             function loadStateFromLocalStorage() {
                 const savedOrder = localStorage.getItem('mercurialeOrder');
                 const savedColumns = localStorage.getItem('mercurialeColumns');
+                const savedComparison = localStorage.getItem('mercurialeComparison');
                 
                 orderList = savedOrder ? JSON.parse(savedOrder) : [];
                 visibleColumns = savedColumns ? JSON.parse(savedColumns) : ['Libellé produit', 'Marque', 'Prix'];
+                comparisonListData = savedComparison ? JSON.parse(savedComparison) : [];
             }
             
             function saveOrderToLocalStorage() {
@@ -280,6 +456,27 @@
                 localStorage.setItem('mercurialeColumns', JSON.stringify(visibleColumns));
             }
             
+            function saveComparisonToLocalStorage() {
+                localStorage.setItem('mercurialeComparison', JSON.stringify(comparisonListData));
+            }
+            
+            // --- MODE SWITCHING ---
+            modeBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    modeBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    const mode = btn.dataset.mode;
+                    if (mode === 'compare') {
+                        compareMode.classList.remove('hidden');
+                        orderMode.classList.add('hidden');
+                    } else {
+                        compareMode.classList.add('hidden');
+                        orderMode.classList.remove('hidden');
+                    }
+                });
+            });
+
             // --- INITIALISATION ---
             loadStateFromLocalStorage();
             initializeModals();
@@ -304,53 +501,281 @@
                 updateCurrentData();
                 updateProductCount();
                 renderOrderList();
+                renderComparisonList();
             })
             .catch(error => {
                 console.error("Erreur de chargement des fichiers JSON:", error);
                 searchResultsContainer.innerHTML = `<div class="bg-red-50 border-l-4 border-red-400 p-4"><p class="text-sm text-red-700">Erreur : Impossible de charger les données.</p></div>`;
             });
 
-            // --- GESTIONNAIRES D'ÉVÉNEMENTS ---
-            sourceCheckboxes.forEach(cb => cb.addEventListener('change', () => {
-                updateCurrentData();
-                performSearch();
-                updateProductCount();
-            }));
-            
-            searchField.addEventListener('change', performSearch);
-            searchInput.addEventListener('input', performSearch);
-
-            columnSelectorBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                columnSelectorDropdown.classList.toggle('hidden');
-            });
-            document.addEventListener('click', () => columnSelectorDropdown.classList.add('hidden'));
-            columnSelectorDropdown.addEventListener('click', e => e.stopPropagation());
-
-            searchResultsContainer.addEventListener('click', (e) => {
-                const addBtn = e.target.closest('.btn-add');
-                if (addBtn) addProductToOrder(addBtn.dataset.code, addBtn.dataset.source);
-                
-                const removeBtn = e.target.closest('.btn-remove-from-search');
-                if (removeBtn) removeProductFromOrder(removeBtn.dataset.code, removeBtn.dataset.source);
-            });
-            
-            orderListContainer.addEventListener('click', (e) => {
-                const removeBtn = e.target.closest('.btn-remove');
-                if (removeBtn) removeProductFromOrder(removeBtn.dataset.code, removeBtn.dataset.source);
-            });
-
-            orderListContainer.addEventListener('input', (e) => {
-                if (e.target.classList.contains('quantity-input')) {
-                    updateProductQuantity(e.target.dataset.code, e.target.dataset.source, e.target.value);
+            // --- COMPARE MODE FUNCTIONS ---
+            productCodeInput.addEventListener('input', (e) => {
+                const code = e.target.value.trim();
+                if (!code) {
+                    priceComparisonResults.classList.add('hidden');
+                    return;
                 }
+                
+                currentProductCode = code;
+                findProductByCode(code);
             });
 
-            downloadCsvBtn.addEventListener('click', downloadOrderAsCSV);
-            downloadXlsxBtn.addEventListener('click', downloadOrderAsXLSX);
+            function findProductByCode(code) {
+                const allData = [...dataFolkestone, ...dataVendome, ...dataWashington, ...dataLeHavre];
+                const products = allData.filter(p => p['Code Produit'] == code);
+                
+                if (products.length === 0) {
+                    priceComparisonResults.classList.add('hidden');
+                    return;
+                }
+                
+                // Group by product name (first product's name)
+                const productName = products[0]['Libellé produit'] || 'Produit inconnu';
+                const productBrand = products[0]['Marque'] || 'Marque inconnue';
+                
+                // Store current product details
+                currentProductDetails = {
+                    code: code,
+                    name: productName,
+                    brand: productBrand,
+                    prices: []
+                };
+                
+                // Clear previous results
+                priceComparisonCards.innerHTML = '';
+                
+                // Check all sources
+                const sources = {
+                    'Folkestone': dataFolkestone.find(p => p['Code Produit'] == code),
+                    'Vendôme': dataVendome.find(p => p['Code Produit'] == code),
+                    'Washington': dataWashington.find(p => p['Code Produit'] == code),
+                    'Le Havre': dataLeHavre.find(p => p['Code Produit'] == code)
+                };
+                
+                Object.entries(sources).forEach(([source, product]) => {
+                    if (product) {
+                        const price = parsePriceAsFloat(product.Prix);
+                        const priceFormatted = formatPriceFromFloat(price);
+                        
+                        currentProductDetails.prices.push({
+                            source: source,
+                            price: price,
+                            priceFormatted: priceFormatted
+                        });
+                        
+                        priceComparisonCards.innerHTML += `
+                            <div class="price-card">
+                                <div class="price-card-header">${source}</div>
+                                <div class="price-card-value">${priceFormatted}</div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                priceComparisonResults.classList.remove('hidden');
+                updateAddToComparisonButton();
+            }
 
-            // --- FONCTIONS PRINCIPALES ---
+            function updateAddToComparisonButton() {
+                if (!currentProductCode || !currentProductDetails) {
+                    addToComparisonListBtn.disabled = true;
+                    return;
+                }
+                
+                // Check if product is already in comparison list
+                const isAlreadyInList = comparisonListData.some(item => item.code === currentProductCode);
+                addToComparisonListBtn.disabled = isAlreadyInList;
+                
+                if (isAlreadyInList) {
+                    addToComparisonListBtn.innerHTML = '<i class="fas fa-check mr-2"></i>Déjà dans la liste';
+                } else {
+                    addToComparisonListBtn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i>Ajouter à la liste de comparaison';
+                }
+            }
 
+            addToComparisonListBtn.addEventListener('click', () => {
+                if (!currentProductCode || !currentProductDetails) return;
+                
+                comparisonListData.push({
+                    code: currentProductCode,
+                    name: currentProductDetails.name,
+                    brand: currentProductDetails.brand,
+                    prices: currentProductDetails.prices
+                });
+                
+                saveComparisonToLocalStorage();
+                renderComparisonList();
+                updateAddToComparisonButton();
+                showNotification('Produit ajouté à la liste de comparaison', 'success');
+            });
+
+            function renderComparisonList() {
+                if (comparisonListData.length === 0) {
+                    comparisonListSection.classList.add('hidden');
+                    comparisonList.innerHTML = '<p class="text-center text-gray-500 py-8 px-4">Aucun article ajouté à la liste de comparaison.</p>';
+                    return;
+                }
+                
+                comparisonListSection.classList.remove('hidden');
+                comparisonCount.textContent = comparisonListData.length;
+                
+                let tableHTML = `
+                    <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-100 sticky top-0 z-10">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Code</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Produit</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Marque</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Folkestone</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Vendôme</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Washington</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Le Havre</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+                
+                comparisonListData.forEach((item, index) => {
+                    const folkestonePrice = item.prices.find(p => p.source === 'Folkestone')?.priceFormatted || '-';
+                    const vendomePrice = item.prices.find(p => p.source === 'Vendôme')?.priceFormatted || '-';
+                    const washingtonPrice = item.prices.find(p => p.source === 'Washington')?.priceFormatted || '-';
+                    const lehavrePrice = item.prices.find(p => p.source === 'Le Havre')?.priceFormatted || '-';
+                    
+                    tableHTML += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.code}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">${item.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.brand}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${folkestonePrice}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${vendomePrice}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${washingtonPrice}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${lehavrePrice}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button class="text-red-500 hover:text-red-700 remove-comparison-item" data-index="${index}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                comparisonList.innerHTML = tableHTML;
+                
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-comparison-item').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const index = parseInt(e.target.closest('button').dataset.index);
+                        comparisonListData.splice(index, 1);
+                        saveComparisonToLocalStorage();
+                        renderComparisonList();
+                        showNotification('Produit retiré de la liste de comparaison', 'info');
+                    });
+                });
+            }
+
+            // --- EXPORT COMPARISON FUNCTIONS ---
+            exportComparisonCsvBtn.addEventListener('click', exportComparisonAsCSV);
+            exportComparisonXlsxBtn.addEventListener('click', exportComparisonAsXLSX);
+
+            function exportComparisonAsCSV() {
+                if (comparisonListData.length === 0) {
+                    showNotification('Aucun produit à exporter', 'warning');
+                    return;
+                }
+                
+                const headers = ['Code', 'Produit', 'Marque', 'Folkestone', 'Vendôme', 'Washington', 'Le Havre'];
+                const csvContent = [
+                    headers.join(';'),
+                    ...comparisonListData.map(item => {
+                        const folkestonePrice = item.prices.find(p => p.source === 'Folkestone')?.price || '';
+                        const vendomePrice = item.prices.find(p => p.source === 'Vendôme')?.price || '';
+                        const washingtonPrice = item.prices.find(p => p.source === 'Washington')?.price || '';
+                        const lehavrePrice = item.prices.find(p => p.source === 'Le Havre')?.price || '';
+                        
+                        return [
+                            item.code,
+                            `"${item.name}"`,
+                            `"${item.brand}"`,
+                            folkestonePrice,
+                            vendomePrice,
+                            washingtonPrice,
+                            lehavrePrice
+                        ].join(';');
+                    })
+                ].join('\n');
+                
+                const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `comparaison_mercuriales_${new Date().toISOString().slice(0,10)}.csv`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+            }
+
+            function exportComparisonAsXLSX() {
+                if (comparisonListData.length === 0) {
+                    showNotification('Aucun produit à exporter', 'warning');
+                    return;
+                }
+                
+                const headers = ['Code', 'Produit', 'Marque', 'Folkestone', 'Vendôme', 'Washington', 'Le Havre'];
+                const wsData = [
+                    headers,
+                    ...comparisonListData.map(item => {
+                        const folkestonePrice = item.prices.find(p => p.source === 'Folkestone')?.price || null;
+                        const vendomePrice = item.prices.find(p => p.source === 'Vendôme')?.price || null;
+                        const washingtonPrice = item.prices.find(p => p.source === 'Washington')?.price || null;
+                        const lehavrePrice = item.prices.find(p => p.source === 'Le Havre')?.price || null;
+                        
+                        return [
+                            item.code,
+                            item.name,
+                            item.brand,
+                            folkestonePrice,
+                            vendomePrice,
+                            washingtonPrice,
+                            lehavrePrice
+                        ];
+                    })
+                ];
+                
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // Mise en forme des colonnes de prix
+                const currencyFormat = '#,##0.00" €"';
+                for(let i = 1; i < wsData.length; i++) {
+                    for(let j = 3; j < 7; j++) {
+                        if (wsData[i][j] !== null) {
+                            const cellAddress = XLSX.utils.encode_cell({r: i, c: j});
+                            if(ws[cellAddress]) ws[cellAddress].z = currencyFormat;
+                        }
+                    }
+                }
+                
+                ws['!cols'] = [
+                    { wch: 10 },  // Code
+                    { wch: 40 },  // Produit
+                    { wch: 20 },  // Marque
+                    { wch: 12 },  // Folkestone
+                    { wch: 12 },  // Vendôme
+                    { wch: 12 },  // Washington
+                    { wch: 12 }   // Le Havre
+                ];
+
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Comparaison");
+                XLSX.writeFile(wb, `comparaison_mercuriales_${new Date().toISOString().slice(0,10)}.xlsx`);
+            }
+
+            // --- ORDER MODE FUNCTIONS (existing functions) ---
             function populateColumnSelector() {
                 columnCheckboxesContainer.innerHTML = '';
                 allHeaders.forEach(header => {
@@ -406,8 +831,6 @@
                 displaySearchResults(lastSearchResults, query);
             }
 
-            // --- FONCTIONS POUR LA RECHERCHE MULTI-CODES ---
-            
             function isMultiCodeSearch(query) {
                 // Vérifie si la requête contient des codes numériques séparés par des espaces
                 const codes = query.split(/\s+/).filter(code => code.trim().length > 0);
@@ -488,7 +911,6 @@
                 }
             }
 
-            // --- NOUVELLE FONCTION POUR AJOUTER TOUS LES RÉSULTATS ---
             function addAllSearchResultsToOrder(results) {
                 if (!results || results.length === 0) {
                     showNotification('Aucun article à ajouter', 'warning');
@@ -725,6 +1147,7 @@
                     if (confirm("Êtes-vous sûr de vouloir tout réinitialiser ? Votre commande et vos préférences de colonnes seront perdues.")) {
                         localStorage.removeItem('mercurialeOrder');
                         localStorage.removeItem('mercurialeColumns');
+                        localStorage.removeItem('mercurialeComparison');
                         location.reload();
                     }
                 });
