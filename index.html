@@ -519,17 +519,38 @@
                 currentProductCode = code;
                 findProductByCode(code);
             });
-
             function findProductByCode(code) {
                 const allData = [...dataFolkestone, ...dataVendome, ...dataWashington, ...dataLeHavre];
-                const products = allData.filter(p => p['Code Produit'] == code);
-                
+                // Handle multiple codes separated by spaces
+                const codes = code.includes(' ') ? code.split(' ') : [code];
+                const products = allData.filter(p => codes.includes(String(p['Code Produit'] ?? '').trim()));
                 if (products.length === 0) {
                     priceComparisonResults.classList.add('hidden');
                     return;
                 }
-                
-                // Group by product name (first product's name)
+
+                // For multiple codes, show all found products
+                if (codes.length > 1) {
+                    priceComparisonCards.innerHTML = '';
+                    products.forEach(product => {
+                        const price = parsePriceAsFloat(product.Prix);
+                        const priceFormatted = formatPriceFromFloat(price);
+                        
+                        priceComparisonCards.innerHTML += `
+                            <div class="price-card">
+                                <div class="price-card-header">${product._source}</div>
+                                <div class="text-xs text-gray-500 mb-1">${product['Code Produit']}</div>
+                                <div class="text-sm mb-1">${product['Libellé produit']}</div>
+                                <div class="price-card-value">${priceFormatted}</div>
+                            </div>
+                        `;
+                    });
+                    priceComparisonResults.classList.remove('hidden');
+                    addToComparisonListBtn.disabled = false;
+                    addToComparisonListBtn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i>Ajouter les résultats à la liste';
+                    return;
+                }
+// Group by product name (first product's name)
                 const productName = products[0]['Libellé produit'] || 'Produit inconnu';
                 const productBrand = products[0]['Marque'] || 'Marque inconnue';
                 
@@ -803,7 +824,6 @@
                 displaySearchResults(lastSearchResults, searchInput.value.trim().toLowerCase());
                 renderOrderList();
             }
-            
             function performSearch() {
                 const query = searchInput.value.trim();
                 const field = searchField.value;
@@ -814,9 +834,9 @@
                     return;
                 }
 
-                // NOUVELLE LOGIQUE: Recherche multi-codes avec ESPACE comme séparateur
-                if (field === 'Code Produit' && isMultiCodeSearch(query)) {
-                    const codes = extractProductCodes(query);
+                // Recherche multi-codes avec ESPACE comme séparateur pour les deux modules
+                if (field === 'Code Produit' && query.includes(' ')) {
+                    const codes = query.split(' ').filter(code => code.trim().length > 0);
                     lastSearchResults = currentData.filter(item => {
                         const itemCode = String(item['Code Produit'] ?? '').trim();
                         return codes.some(code => code === itemCode);
@@ -830,31 +850,7 @@
                 }
                 displaySearchResults(lastSearchResults, query);
             }
-
-            function isMultiCodeSearch(query) {
-                // Vérifie si la requête contient des codes numériques séparés par des espaces
-                const codes = query.split(/\s+/).filter(code => code.trim().length > 0);
-                return codes.length > 1 && codes.every(code => /^\d{2,6}$/.test(code));
-            }
-
-            function extractProductCodes(query) {
-                return query.split(/\s+/)
-                    .map(code => code.trim())
-                    .filter(code => code.length >= 2 && code.length <= 6 && /^\d+$/.test(code));
-            }
-
-            function highlightMultiCodes(text, codes) {
-                if (!text || !codes || codes.length === 0) return text;
-                
-                let highlighted = String(text);
-                codes.forEach(code => {
-                    const regex = new RegExp(`\\b${code}\\b`, 'gi');
-                    highlighted = highlighted.replace(regex, '<span class="search-highlight">$&</span>');
-                });
-                return highlighted;
-            }
-            
-            function displaySearchResults(results, query) {
+function displaySearchResults(results, query) {
                 if (results.length === 0) {
                     if (query.length > 0) {
                         let message = `Aucun résultat pour "<strong>${query}</strong>"`;
@@ -871,11 +867,10 @@
                     }
                     return;
                 }
-                
                 // Afficher un indicateur pour la recherche multi-codes
                 let infoHTML = '';
-                if (searchField.value === 'Code Produit' && isMultiCodeSearch(query)) {
-                    const codes = extractProductCodes(query);
+                if (searchField.value === 'Code Produit' && query.includes(' ')) {
+                    const codes = query.split(' ').filter(code => code.trim().length > 0);
                     const foundCount = results.length;
                     const totalCodes = codes.length;
                     
@@ -899,8 +894,7 @@
                         </div>
                     `;
                 }
-                
-                searchResultsContainer.innerHTML = infoHTML + createTableHTML(results, 'search', query);
+searchResultsContainer.innerHTML = infoHTML + createTableHTML(results, 'search', query);
                 
                 // Ajouter l'événement pour le bouton "Ajouter tout"
                 const addAllBtn = document.getElementById('addAllResultsBtn');
@@ -950,10 +944,9 @@
             
             function createTableHTML(data, type, query = '') {
                 const isOrder = type === 'order';
-                const isMultiCode = type === 'search' && searchField.value === 'Code Produit' && isMultiCodeSearch(query);
-                const codesToHighlight = isMultiCode ? extractProductCodes(query) : [];
-                
-                return `
+                const isMultiCode = type === 'search' && searchField.value === 'Code Produit' && query.includes(' ');
+                const codesToHighlight = isMultiCode ? query.split(' ').filter(code => code.trim().length > 0) : [];
+return `
                     <div class="custom-scrollbar" style="max-height: 400px; overflow-y: auto;">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-100 sticky top-0 z-10">
