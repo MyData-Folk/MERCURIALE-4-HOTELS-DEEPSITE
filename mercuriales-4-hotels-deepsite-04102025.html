@@ -82,17 +82,6 @@
         .status-added {
             background: linear-gradient(135deg, #10b981, #059669);
         }
-        
-        /* Style pour le bouton Nouvelle Commande */
-        .btn-reset {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
-            transition: all 0.2s;
-        }
-        
-        .btn-reset:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
-        }
     </style>
 </head>
 <body class="antialiased">
@@ -181,7 +170,6 @@
                     <div class="flex items-center justify-between mb-3">
                         <h2 class="text-lg font-semibold text-gray-800 flex items-center"><i class="fas fa-shopping-cart mr-2 text-indigo-500"></i>Ma commande<span id="orderCount" class="ml-2 bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">0</span></h2>
                         <div class="flex space-x-2">
-                            <button id="newOrderBtn" class="btn-reset text-white px-4 py-2 rounded-md text-sm font-medium flex items-center"><i class="fas fa-trash-alt mr-2"></i>Nouvelle Commande</button>
                             <button id="downloadCsvBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-csv mr-2"></i>CSV</button>
                             <button id="downloadXlsxBtn" disabled class="btn-primary text-white px-4 py-2 rounded-md text-sm font-medium flex items-center disabled:opacity-50 disabled:cursor-not-allowed"><i class="fas fa-file-excel mr-2"></i>Excel</button>
                         </div>
@@ -262,7 +250,6 @@
             const columnSelectorBtn = document.getElementById('columnSelectorBtn');
             const columnSelectorDropdown = document.getElementById('columnSelectorDropdown');
             const columnCheckboxesContainer = document.getElementById('columnCheckboxes');
-            const newOrderBtn = document.getElementById('newOrderBtn');
             // Modal Elements
             const settingsBtn = document.getElementById('settingsBtn');
             const contactBtn = document.getElementById('contactBtn');
@@ -361,26 +348,6 @@
 
             downloadCsvBtn.addEventListener('click', downloadOrderAsCSV);
             downloadXlsxBtn.addEventListener('click', downloadOrderAsXLSX);
-            
-            // NOUVEAU: Bouton Nouvelle Commande
-            newOrderBtn.addEventListener('click', () => {
-                if (orderList.length === 0) {
-                    showNotification('Votre commande est déjà vide', 'info');
-                    return;
-                }
-                
-                if (confirm("Êtes-vous sûr de vouloir vider complètement votre commande actuelle ?")) {
-                    orderList = [];
-                    saveOrderToLocalStorage();
-                    renderOrderList();
-                    showNotification('Commande vidée avec succès', 'success');
-                    
-                    // Si une recherche est active, mettre à jour les boutons "Ajouter"
-                    if (lastSearchResults.length > 0) {
-                        displaySearchResults(lastSearchResults, searchInput.value.trim().toLowerCase());
-                    }
-                }
-            });
 
             // --- FONCTIONS PRINCIPALES ---
 
